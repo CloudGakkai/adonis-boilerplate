@@ -16,13 +16,13 @@ import { StatusCodes } from 'http-status-codes'
  *
  * ```
  */
-export function CheckRole(permitted: string[] = []) {
+export function CheckRole(permission: string[] = []) {
   return function (_target: Object, _propertyKey: string, descriptor: PropertyDescriptor) {
     const originalMethod = descriptor.value!
     descriptor.value = function (...args: any[]) {
       const ctx: HttpContext = args[0]
-      const filtered = permitted.filter((item) => ctx.request.decoded.role === item)
-      if (filtered.length === 1) {
+      const isPermitted: boolean = permission.some((item) => ctx.request.decoded.role === item)
+      if (isPermitted) {
         return originalMethod.bind(this)(...args)
       } else {
         throw new UnAuthorized('Tidak memiliki izin', StatusCodes.UNAUTHORIZED)
