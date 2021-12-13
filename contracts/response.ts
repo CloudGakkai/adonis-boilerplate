@@ -1,5 +1,5 @@
-type ResponseData = object;
-type ResponseCode = number;
+type ResponseData = object
+type ResponseCode = number
 
 declare module '@ioc:Adonis/Core/Response' {
   interface ResponseContract {

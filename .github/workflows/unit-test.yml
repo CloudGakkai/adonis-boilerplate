@@ -1,0 +1,22 @@
+name: Unit Testting
+
+on:
+  pull_request:
+    branches: [dev]
+  push:
+    branches: [feature/**, devel/**]
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+
+      - name: Install Modules
+        run: yarn install
+
+      - name: Check lint on entire project
+        run: yarn lint
+
+      - name: Start Testing
+        run: yarn test
