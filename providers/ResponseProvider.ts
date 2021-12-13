@@ -23,36 +23,35 @@ import HttpStatus from 'http-status-codes'
 
 export default class ResponseProvider {
   public static needsApplication = true
-  constructor (protected app: ApplicationContract) {
-  }
+  constructor(protected app: ApplicationContract) {}
 
-  public register () {
+  public register() {
     // Register your own bindings
   }
 
-  public async boot () {
+  public async boot() {
     const Response = this.app.container.use('Adonis/Core/Response')
 
-    Response.macro('api', function(data, status) {
-      const request = this.ctx!.request;
+    Response.macro('api', function (data, status) {
+      const request = this.ctx!.request
 
       this.ctx!.response.status(status).json({
         response: {
           status: status,
           message: HttpStatus.getStatusText(status),
-          url: request.completeUrl()
+          url: request.completeUrl(),
         },
-        data
+        data,
       })
       return this
     })
   }
 
-  public async ready () {
+  public async ready() {
     // App is ready
   }
 
-  public async shutdown () {
+  public async shutdown() {
     // Cleanup, since app is going down
   }
 }
