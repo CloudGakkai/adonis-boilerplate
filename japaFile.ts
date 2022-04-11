@@ -20,7 +20,13 @@ async function runMigration() {
 }
 
 async function rollbackMigrations() {
-  fs.rmSync(`${__dirname}/tmp/db.sqlite3`)
+  if (process.platform === 'win32') {
+    await execa.node('ace', ['migration:rollback', '--batch=0'], {
+      stdio: 'inherit',
+    })
+  } else {
+    fs.rmSync(`${__dirname}/tmp/db.sqlite3`)
+  }
 }
 
 // Add this method to the file
