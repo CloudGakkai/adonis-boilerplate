@@ -1,5 +1,7 @@
 import { ApplicationContract } from '@ioc:Adonis/Core/Application'
-
+// import ScheduleRegistry from 'App/Registries/ScheduleRegistry'
+// import { RecurrenceRule } from 'node-schedule'
+// import Logger from '@ioc:Adonis/Core/Logger'
 export default class AppProvider {
   constructor(protected app: ApplicationContract) {}
 
@@ -12,7 +14,12 @@ export default class AppProvider {
   }
 
   public async ready() {
-    await import('../start/socket')
+    // await import('../start/socket')
+    // const rule = new RecurrenceRule()
+    // rule.second = 1
+    // ScheduleRegistry.create('health_check', rule, () => {
+    //   Logger.info('Ok is already up !')
+    // })
   }
 
   public async shutdown() {
