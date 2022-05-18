@@ -21,7 +21,7 @@ export function CheckRole(permission: string[] = []) {
     const originalMethod = descriptor.value!
     descriptor.value = function (...args: any[]) {
       const ctx: HttpContext = args[0]
-      const isPermitted: boolean = permission.some((item) => ctx.request.decoded.role === item)
+      const isPermitted: boolean = permission.some((item) => ctx.request.decoded?.role === item)
       if (isPermitted) {
         return originalMethod.bind(this)(...args)
       } else {
