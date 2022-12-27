@@ -35,6 +35,8 @@ export default class ResponseProvider {
     Response.macro('api', function (data, status) {
       const request = this.ctx!.request
 
+      this.ctx!.response.header('Access-Control-Allow-Origin', '*')
+
       this.ctx!.response.status(status).json({
         response: {
           status: status,

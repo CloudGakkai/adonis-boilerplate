@@ -1,3 +1,5 @@
+import { markdownToTxt } from 'markdown-to-txt'
+
 export default class StringTransform {
   public static toSlug(str: string): string {
     str = str.replace(/^\s+|\s+$/g, '') // trim
@@ -11,10 +13,19 @@ export default class StringTransform {
     }
 
     str = str
-      .replace(/[^a-z0-9 -]/g, '') // remove invalid chars
-      .replace(/\s+/g, '-') // collapse whitespace and replace by -
-      .replace(/-+/g, '-') // collapse dashes
+      .toString()
+      .trim()
+      .toLowerCase()
+      .replace(/\s+/g, '-')
+      .replace(/[^\w\-]+/g, '')
+      .replace(/\-\-+/g, '-')
+      .replace(/^-+/, '')
+      .replace(/-+$/, '')
 
     return str
+  }
+
+  public static toPlainText(str: string): string {
+    return markdownToTxt(str)
   }
 }

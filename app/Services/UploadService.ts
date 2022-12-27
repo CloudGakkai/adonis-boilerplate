@@ -1,7 +1,7 @@
 import { MultipartFileContract } from '@ioc:Adonis/Core/BodyParser'
 import sharp from 'sharp'
 import Drive from '@ioc:Adonis/Core/Drive'
-import faker from 'faker'
+import { faker } from '@faker-js/faker'
 import Application from '@ioc:Adonis/Core/Application'
 
 export interface ImageUploadOptions {
