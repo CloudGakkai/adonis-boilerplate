@@ -46,6 +46,7 @@ export default class PaginationHelper {
     response?.header('x-page', lists.currentPage)
     response?.header('x-last-page', lists.lastPage)
     response?.header('x-per-page', lists.perPage)
+    response?.header('x-total', lists.total)
     const jsonData = lists.serialize()
     return jsonData.data
   }

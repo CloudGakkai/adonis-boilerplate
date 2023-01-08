@@ -1,4 +1,4 @@
-import * as jwt from 'jsonwebtoken'
+import jwt from 'jsonwebtoken'
 import Env from '@ioc:Adonis/Core/Env'
 import AppException from 'App/Exceptions/AppException'
 import { StatusCodes } from 'http-status-codes'
