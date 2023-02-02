@@ -1,5 +1,5 @@
 import Database from '@ioc:Adonis/Lucid/Database'
-import test from 'japa'
+import { test } from '@japa/runner'
 // import Config from '@ioc:Adonis/Core/Config'
 
 test.group('Template Test', (group) => {
@@ -12,11 +12,10 @@ test.group('Template Test', (group) => {
    * to make all data is not persisted on any database
    *
    */
-  group.beforeEach(async () => {
-    await Database.beginGlobalTransaction()
-  })
-
-  group.afterEach(async () => {
-    await Database.rollbackGlobalTransaction()
-  })
+  // group.beforeEach(async () => {
+  //   await Database.beginGlobalTransaction()
+  // })
+  // group.afterEach(async () => {
+  //   await Database.rollbackGlobalTransaction()
+  // })
 })
