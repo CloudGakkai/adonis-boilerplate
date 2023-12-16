@@ -4,4 +4,4 @@ Route.group(() => {
   Route.get('/', ({ response }) => {
     return response.api({ message: 'Hello world' }, 200)
   })
-}).middleware(['session'])
+}).prefix('/v1')

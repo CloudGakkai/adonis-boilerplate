@@ -1,15 +1,23 @@
-import { DateTime } from 'luxon'
 import { BaseModel, column } from '@ioc:Adonis/Lucid/Orm'
 
-export default class Role extends BaseModel {
+// Types
+import type { DateTime } from 'luxon'
+
+export default class Session extends BaseModel {
   @column({ isPrimary: true })
-  public id: number
+  public id: string
 
   @column()
-  public title: string
+  public userId: string
+
+  @column.dateTime()
+  public refreshedAt: DateTime
 
   @column()
-  public description: string
+  public userAgent: string
+
+  @column()
+  public ip: string
 
   @column.dateTime({ autoCreate: true })
   public createdAt: DateTime
