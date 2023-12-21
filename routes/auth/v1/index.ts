@@ -1,7 +1,7 @@
 import Route from '@ioc:Adonis/Core/Route'
 
 Route.group(() => {
-  Route.get('/', ({ response }) => {
-    return response.api({ message: 'Hello world' }, 200)
-  })
-}).prefix('/v1')
+  Route.post('/register', 'AuthsController.signUpWithPassword')
+})
+  .prefix('/v1')
+  .namespace('App/Controllers/Http/v1/Auth')

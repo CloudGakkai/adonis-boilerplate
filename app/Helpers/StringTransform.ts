@@ -28,4 +28,9 @@ export default class StringTransform {
   public static toPlainText(str: string): string {
     return markdownToTxt(str)
   }
+
+  public static generateOtpNumber() {
+    const otp = Math.floor(Math.random() * 900000) + 100000
+    return otp.toString()
+  }
 }
