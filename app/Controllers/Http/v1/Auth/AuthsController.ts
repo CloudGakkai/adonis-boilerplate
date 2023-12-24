@@ -88,7 +88,7 @@ export default class AuthsController {
 
     if (result.user && result.identity) {
       if (payload.email) {
-        this.mailer.sendEmailVerification(payload.email, confirmationToken, 'http://localhost:3000')
+        this.mailer.sendEmailVerification(payload.email, confirmationToken, 'http://localhost:3333')
       } else {
         if (payload.channel === 'whatsapp') {
           this.twilio.sendOtpWhatsapp(otpCode, payload.phone!)

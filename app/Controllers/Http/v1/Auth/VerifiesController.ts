@@ -8,6 +8,7 @@ import { cuid } from '@ioc:Adonis/Core/Helpers'
 
 // Validators
 import VerifyOtpValidator from 'App/Validators/v1/Verify/VerifyOtpValidator'
+import VerifyMagicLinkValidator from 'App/Validators/v1/Verify/VerifyMagicLinkValidator'
 
 // Models
 import User from 'App/Models/User'
@@ -56,7 +57,7 @@ export default class VerifiesController {
     // Check if session is invalid
     // OTP Code should valid for 60 mins
     if (StringTransform.isOtpExpired(user.confirmationSentAt)) {
-      return response.api({ message: 'Invalid OTP Code.' }, StatusCodes.UNAUTHORIZED)
+      return response.api({ message: 'OTP Code is expired.' }, StatusCodes.UNAUTHORIZED)
     }
 
     // Validate OTP Code
@@ -117,6 +118,97 @@ export default class VerifiesController {
       return response.api(userToken, StatusCodes.OK)
     } else {
       return response.api({ message: 'Internal server error.' }, StatusCodes.INTERNAL_SERVER_ERROR)
+    }
+  }
+
+  public async verifyMagicLink({ request, response }: HttpContextContract) {
+    const payload = await request.validate(VerifyMagicLinkValidator)
+    const headers = request.headers()
+
+    const user = await User.findBy('confirmation_token', payload.token)
+
+    if (!user) {
+      return response
+        .redirect()
+        .withQs({ message: 'Invalid verification request', status: 'failed' })
+        .toPath(payload.redirect)
+    }
+
+    // Check if session is invalid
+    // OTP Code should valid for 60 mins
+    if (StringTransform.isOtpExpired(user.confirmationSentAt)) {
+      return response
+        .redirect()
+        .withQs({
+          message: 'Verification request is expired',
+          status: 'failed',
+        })
+        .toPath(payload.redirect)
+    }
+
+    const newSession = await Database.transaction(async (trx) => {
+      user.useTransaction(trx)
+
+      const lastSignedAt = DateTime.now()
+
+      user.lastSignInAt = lastSignedAt
+      await user.save()
+
+      const identity = await Identity.query({ client: trx })
+        .where('user_id', user.id)
+        .andWhere(
+          'provider',
+          payload.type === 'sms' || payload.type === 'whatsapp' ? 'phone' : 'email'
+        )
+        .first()
+
+      identity!.lastSignInAt = lastSignedAt
+      await identity?.save()
+
+      const session = await Session.create(
+        {
+          userId: user.id,
+          userAgent: headers['user-agent'],
+          ip: request.ips()[0],
+        },
+        { client: trx }
+      )
+
+      const refreshToken = await RefreshToken.create(
+        {
+          userId: user.id,
+          sessionId: session.id,
+          token: cuid(),
+          revoked: false,
+          parent: null,
+        },
+        { client: trx }
+      )
+
+      return {
+        session,
+        refreshToken,
+      }
+    })
+
+    if (newSession.session && newSession.refreshToken) {
+      const userToken = this.jwt.generate({ user_id: user.id }).make()
+
+      return response
+        .redirect()
+        .withQs({
+          token: userToken.token,
+          status: 'success',
+        })
+        .toPath(payload.redirect)
+    } else {
+      return response
+        .redirect()
+        .withQs({
+          message: 'Internal server error',
+          status: 'failed',
+        })
+        .toPath(payload.redirect)
     }
   }
 }
