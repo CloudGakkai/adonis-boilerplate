@@ -10,6 +10,7 @@ export default class extends BaseSchema {
       table.uuid('session_id').references('id').inTable('auth.sessions')
       table.string('token')
       table.boolean('revoked').defaultTo(false)
+      table.string('parent').nullable()
       table.timestamp('created_at', { useTz: true })
       table.timestamp('updated_at', { useTz: true })
     })

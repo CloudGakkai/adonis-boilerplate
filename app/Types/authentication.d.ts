@@ -1,5 +1,5 @@
 interface Token {
-  user_id: number
+  user_id: string
 }
 
 interface JwtGeneratePayload {

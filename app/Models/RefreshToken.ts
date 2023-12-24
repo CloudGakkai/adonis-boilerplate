@@ -4,6 +4,8 @@ import { BaseModel, column } from '@ioc:Adonis/Lucid/Orm'
 import type { DateTime } from 'luxon'
 
 export default class RefreshToken extends BaseModel {
+  public static table = 'auth.refresh_tokens'
+
   @column({ isPrimary: true })
   public id: string
 
@@ -18,6 +20,9 @@ export default class RefreshToken extends BaseModel {
 
   @column()
   public revoked: boolean
+
+  @column()
+  public parent: string | null
 
   @column.dateTime({ autoCreate: true })
   public createdAt: DateTime

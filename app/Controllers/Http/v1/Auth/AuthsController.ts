@@ -10,7 +10,7 @@ import ResendService from 'App/Services/ResendService'
 import TwilioService from 'App/Services/TwilioService'
 
 // Validators
-import RegisterWithPassword from 'App/Validators/v1/Auth/Email/RegisterWithPasswordValidator'
+import RegisterWithPassword from 'App/Validators/v1/Auth/RegisterWithPasswordValidator'
 
 // Models
 import User from 'App/Models/User'

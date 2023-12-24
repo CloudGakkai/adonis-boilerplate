@@ -13,8 +13,14 @@ export default class Md5 {
   }
 
   public verify(plainText: string, hashed: string) {
-    const hash = this.hasher.update(plainText).digest('hex')
+    return new Promise((resolve, reject) => {
+      try {
+        const hash = this.hasher.update(plainText).digest('hex')
 
-    return hash === hashed
+        resolve(hash === hashed)
+      } catch (e) {
+        reject(e)
+      }
+    })
   }
 }

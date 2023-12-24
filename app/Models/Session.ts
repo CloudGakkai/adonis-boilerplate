@@ -4,6 +4,8 @@ import { BaseModel, column } from '@ioc:Adonis/Lucid/Orm'
 import type { DateTime } from 'luxon'
 
 export default class Session extends BaseModel {
+  public static table = 'auth.sessions'
+
   @column({ isPrimary: true })
   public id: string
 
