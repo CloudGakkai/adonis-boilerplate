@@ -1,6 +1,10 @@
-import { BaseModel, column } from '@ioc:Adonis/Lucid/Orm'
+import { BaseModel, belongsTo, column } from '@ioc:Adonis/Lucid/Orm'
+
+// Models
+import User from './User'
 
 // Types
+import type { BelongsTo } from '@ioc:Adonis/Lucid/Orm'
 import type { DateTime } from 'luxon'
 
 export default class Identity extends BaseModel {
@@ -29,4 +33,8 @@ export default class Identity extends BaseModel {
 
   @column.dateTime({ autoCreate: true, autoUpdate: true })
   public updatedAt: DateTime
+
+  // Relationship
+  @belongsTo(() => User)
+  public user: BelongsTo<typeof User>
 }

@@ -73,6 +73,13 @@ export default class VerifiesController {
       const lastSignedAt = DateTime.now()
 
       user.lastSignInAt = lastSignedAt
+
+      if (payload.type === 'sms' || payload.type === 'whatsapp') {
+        user.phoneConfirmedAt = lastSignedAt
+      } else {
+        user.emailConfirmedAt = lastSignedAt
+      }
+
       await user.save()
 
       const identity = await Identity.query({ client: trx })
@@ -114,8 +121,16 @@ export default class VerifiesController {
 
     if (newSession.session && newSession.refreshToken) {
       const userToken = this.jwt.generate({ user_id: user.id }).make()
+      const expiresAt = DateTime.now().plus({ days: 7 }).toUnixInteger()
 
-      return response.api(userToken, StatusCodes.OK)
+      return response.api(
+        {
+          access_token: userToken.token,
+          expires_at: expiresAt,
+          refresh_token: newSession.refreshToken.token,
+        },
+        StatusCodes.OK
+      )
     } else {
       return response.api({ message: 'Internal server error.' }, StatusCodes.INTERNAL_SERVER_ERROR)
     }
@@ -152,14 +167,16 @@ export default class VerifiesController {
       const lastSignedAt = DateTime.now()
 
       user.lastSignInAt = lastSignedAt
+
+      if (payload.type === 'signup') {
+        user.emailConfirmedAt = lastSignedAt
+      }
+
       await user.save()
 
       const identity = await Identity.query({ client: trx })
         .where('user_id', user.id)
-        .andWhere(
-          'provider',
-          payload.type === 'sms' || payload.type === 'whatsapp' ? 'phone' : 'email'
-        )
+        .andWhere('provider', payload.type === 'signup' ? 'email' : 'phone')
         .first()
 
       identity!.lastSignInAt = lastSignedAt
@@ -193,11 +210,14 @@ export default class VerifiesController {
 
     if (newSession.session && newSession.refreshToken) {
       const userToken = this.jwt.generate({ user_id: user.id }).make()
+      const expiresAt = DateTime.now().plus({ days: 7 }).toUnixInteger()
 
       return response
         .redirect()
         .withQs({
-          token: userToken.token,
+          access_token: userToken.token,
+          expires_at: expiresAt,
+          refresh_token: newSession.refreshToken.token,
           status: 'success',
         })
         .toPath(payload.redirect)

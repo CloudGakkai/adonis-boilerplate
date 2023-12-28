@@ -1,7 +1,13 @@
-import { BaseModel, beforeSave, column } from '@ioc:Adonis/Lucid/Orm'
+import { BaseModel, beforeSave, hasMany, column } from '@ioc:Adonis/Lucid/Orm'
 import Hash from '@ioc:Adonis/Core/Hash'
 
+// Models
+import Session from './Session'
+import Identity from './Identity'
+import RefreshToken from './RefreshToken'
+
 // Types
+import type { HasMany } from '@ioc:Adonis/Lucid/Orm'
 import type { DateTime } from 'luxon'
 
 export default class User extends BaseModel {
@@ -85,4 +91,14 @@ export default class User extends BaseModel {
       user.encryptedPassword = await Hash.make(user.encryptedPassword)
     }
   }
+
+  // Relationships
+  @hasMany(() => Session)
+  public sessions: HasMany<typeof Session>
+
+  @hasMany(() => Identity)
+  public identities: HasMany<typeof Identity>
+
+  @hasMany(() => RefreshToken)
+  public refresh_tokens: HasMany<typeof RefreshToken>
 }
