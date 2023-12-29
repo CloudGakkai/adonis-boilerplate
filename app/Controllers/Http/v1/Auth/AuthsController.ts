@@ -16,6 +16,7 @@ import TwilioService from 'App/Services/TwilioService'
 import RegisterWithPasswordValidator from 'App/Validators/v1/Auth/RegisterWithPasswordValidator'
 import LoginWithPasswordValidator from 'App/Validators/v1/Auth/LoginWithPasswordValidator'
 import LoginWithOtpValidator from 'App/Validators/v1/Auth/LoginWithOtpValidator'
+import LogoutValidator from 'App/Validators/v1/Auth/LogoutValidator'
 
 // Models
 import User from 'App/Models/User'
@@ -204,7 +205,9 @@ export default class AuthsController {
     })
 
     if (newSession.session && newSession.refreshToken) {
-      const userToken = this.jwt.generate({ user_id: user.id }).make()
+      const userToken = this.jwt
+        .generate({ user_id: user.id, session_id: newSession.session.id })
+        .make()
       const expiresAt = DateTime.now().plus({ days: 7 }).toUnixInteger()
 
       return response.api(
@@ -242,8 +245,6 @@ export default class AuthsController {
     if (!user) {
       return response.api({ message: 'Invalid credentials.' }, StatusCodes.UNAUTHORIZED)
     }
-
-    console.log(user.toJSON())
 
     if (payload.email && !user.emailConfirmedAt) {
       return response.api({ message: 'Please confirm your email.' }, StatusCodes.FORBIDDEN)
@@ -291,6 +292,52 @@ export default class AuthsController {
 
       this.twilio.sendOtpSms(otpCode, payload.phone)
       return response.api({ message: `OTP Code has been sent to ${payload.phone}` }, StatusCodes.OK)
+    }
+  }
+
+  public async signOut({ request, response }: HttpContextContract) {
+    const payload = await request.validate(LogoutValidator)
+    const userId = request.decoded!.user_id
+    const sessionId = request.decoded!.session_id
+
+    const sessions = await Database.transaction(async (trx) => {
+      const currentSession = await Session.query({ client: trx })
+        .where('user_id', userId)
+        .andWhere('id', sessionId)
+        .first()
+
+      const allSession = await Session.query({ client: trx }).where('user_id', userId).exec()
+
+      return {
+        currentSession,
+        allSession,
+      }
+    })
+
+    try {
+      if (!sessions.currentSession) {
+        return response.api({ message: 'Invalid session.' }, StatusCodes.UNAUTHORIZED)
+      }
+
+      if (payload.scope === 'global') {
+        sessions.allSession.map(async (session) => {
+          await session.delete()
+        })
+      }
+
+      if (payload.scope === 'others') {
+        sessions.allSession.map(async (session) => {
+          if (session.id !== sessions.currentSession!.id) await session.delete()
+        })
+      }
+
+      if (payload.scope === 'local') {
+        await sessions.currentSession.delete()
+      }
+
+      return response.api({ message: '' }, StatusCodes.NO_CONTENT)
+    } catch (e) {
+      return response.api({ message: `704: ${e}` }, StatusCodes.INTERNAL_SERVER_ERROR)
     }
   }
 }

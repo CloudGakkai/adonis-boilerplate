@@ -8,7 +8,7 @@ export default class extends BaseSchema {
       table
         .uuid('id', { primaryKey: true })
         .defaultTo(this.db.rawQuery('uuid_generate_v4()').knexQuery)
-      table.uuid('user_id').references('id').inTable('auth.users')
+      table.uuid('user_id').references('id').inTable('auth.users').onDelete('CASCADE')
       table.timestamp('refreshed_at', { useTz: true })
       table.text('user_agent')
       table.string('ip')

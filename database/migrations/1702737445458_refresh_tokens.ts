@@ -6,8 +6,8 @@ export default class extends BaseSchema {
   public async up() {
     this.schema.createTable(this.tableName, (table) => {
       table.increments('id')
-      table.uuid('user_id').references('id').inTable('auth.users')
-      table.uuid('session_id').references('id').inTable('auth.sessions')
+      table.uuid('user_id').references('id').inTable('auth.users').onDelete('CASCADE')
+      table.uuid('session_id').references('id').inTable('auth.sessions').onDelete('CASCADE')
       table.string('token')
       table.boolean('revoked').defaultTo(false)
       table.string('parent').nullable()

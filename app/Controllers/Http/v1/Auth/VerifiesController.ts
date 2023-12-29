@@ -133,7 +133,9 @@ export default class VerifiesController {
     })
 
     if (newSession.session && newSession.refreshToken) {
-      const userToken = this.jwt.generate({ user_id: user.id }).make()
+      const userToken = this.jwt
+        .generate({ user_id: user.id, session_id: newSession.session.id })
+        .make()
       const expiresAt = DateTime.now().plus({ days: 7 }).toUnixInteger()
 
       return response.api(
@@ -230,7 +232,9 @@ export default class VerifiesController {
     })
 
     if (newSession.session && newSession.refreshToken) {
-      const userToken = this.jwt.generate({ user_id: user.id }).make()
+      const userToken = this.jwt
+        .generate({ user_id: user.id, session_id: newSession.session.id })
+        .make()
       const expiresAt = DateTime.now().plus({ days: 7 }).toUnixInteger()
 
       return response

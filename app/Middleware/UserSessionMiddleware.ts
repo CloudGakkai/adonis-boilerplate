@@ -1,7 +1,7 @@
 import { HttpContextContract } from '@ioc:Adonis/Core/HttpContext'
 import JwtService from 'App/Services/JwtService'
 
-export default class SessionMiddleware {
+export default class UserSessionMiddleware {
   public jwtService = new JwtService()
 
   public async handle({ request, response }: HttpContextContract, next: () => Promise<void>) {
@@ -20,6 +20,7 @@ export default class SessionMiddleware {
 
     request.decoded = {
       user_id: decoded['user_id'],
+      session_id: decoded['session_id'],
     }
 
     await next()
