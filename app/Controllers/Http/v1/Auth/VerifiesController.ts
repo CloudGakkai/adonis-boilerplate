@@ -5,6 +5,7 @@ import JwtService from 'App/Services/JwtService'
 import { DateTime } from 'luxon'
 import Database from '@ioc:Adonis/Lucid/Database'
 import { cuid } from '@ioc:Adonis/Core/Helpers'
+import { EMAIL_MAGICLINK_TYPES } from 'App/Constants/passwordless-types'
 
 // Validators
 import VerifyOtpValidator from 'App/Validators/v1/Verify/VerifyOtpValidator'
@@ -61,7 +62,7 @@ export default class VerifiesController {
     }
 
     // Validate OTP Code
-    const validateOtp = await this.md5.verify(payload.otp, user.confirmationToken)
+    const validateOtp = await this.md5.verify(payload.otp, user.confirmationToken ?? '')
 
     if (!validateOtp) {
       return response.api({ message: 'Invalid OTP Code.' }, StatusCodes.UNAUTHORIZED)
@@ -72,16 +73,6 @@ export default class VerifiesController {
 
       const lastSignedAt = DateTime.now()
 
-      user.lastSignInAt = lastSignedAt
-
-      if (payload.type === 'sms' || payload.type === 'whatsapp') {
-        user.phoneConfirmedAt = lastSignedAt
-      } else {
-        user.emailConfirmedAt = lastSignedAt
-      }
-
-      await user.save()
-
       const identity = await Identity.query({ client: trx })
         .where('user_id', user.id)
         .andWhere(
@@ -91,6 +82,28 @@ export default class VerifiesController {
         .first()
 
       identity!.lastSignInAt = lastSignedAt
+      user.lastSignInAt = lastSignedAt
+      user.confirmationToken = null
+
+      if (payload.type === 'sms' || payload.type === 'whatsapp') {
+        if (user.phoneConfirmedAt === null) {
+          user.phoneConfirmedAt = lastSignedAt
+          identity!.identity_data = {
+            ...identity!.identity_data,
+            phone_verified: true,
+          }
+        }
+      } else {
+        if (user.emailConfirmedAt === null) {
+          user.emailConfirmedAt = lastSignedAt
+          identity!.identity_data = {
+            ...identity!.identity_data,
+            email_verified: true,
+          }
+        }
+      }
+
+      await user.save()
       await identity?.save()
 
       const session = await Session.create(
@@ -167,6 +180,7 @@ export default class VerifiesController {
       const lastSignedAt = DateTime.now()
 
       user.lastSignInAt = lastSignedAt
+      user.confirmationToken = null
 
       if (payload.type === 'signup') {
         user.emailConfirmedAt = lastSignedAt
@@ -176,10 +190,17 @@ export default class VerifiesController {
 
       const identity = await Identity.query({ client: trx })
         .where('user_id', user.id)
-        .andWhere('provider', payload.type === 'signup' ? 'email' : 'phone')
+        .andWhere('provider', EMAIL_MAGICLINK_TYPES.includes(payload.type) ? 'email' : 'phone')
         .first()
 
       identity!.lastSignInAt = lastSignedAt
+
+      if (payload.type === 'signup') {
+        identity!.identity_data = {
+          ...identity!.identity_data,
+          email_verified: true,
+        }
+      }
       await identity?.save()
 
       const session = await Session.create(

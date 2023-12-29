@@ -15,6 +15,7 @@ import TwilioService from 'App/Services/TwilioService'
 // Validators
 import RegisterWithPasswordValidator from 'App/Validators/v1/Auth/RegisterWithPasswordValidator'
 import LoginWithPasswordValidator from 'App/Validators/v1/Auth/LoginWithPasswordValidator'
+import LoginWithOtpValidator from 'App/Validators/v1/Auth/LoginWithOtpValidator'
 
 // Models
 import User from 'App/Models/User'
@@ -76,10 +77,9 @@ export default class AuthsController {
             ? {
                 email: user.email,
                 email_verified: false,
-                phone_verified: false,
               }
             : {
-                email_verified: false,
+                phone: user.phone,
                 phone_verified: false,
               },
           email: user?.email ?? undefined,
@@ -95,7 +95,7 @@ export default class AuthsController {
 
     if (result.user && result.identity) {
       if (payload.email) {
-        this.mailer.sendEmailVerification(payload.email, confirmationToken, 'http://localhost:3333')
+        this.mailer.sendVerification(payload.email, confirmationToken, 'http://localhost:3333')
       } else {
         if (payload.channel === 'whatsapp') {
           this.twilio.sendOtpWhatsapp(otpCode, payload.phone!)
@@ -217,6 +217,80 @@ export default class AuthsController {
       )
     } else {
       return response.api({ message: 'Internal server error.' }, StatusCodes.INTERNAL_SERVER_ERROR)
+    }
+  }
+
+  public async signInWithOtp({ request, response }: HttpContextContract) {
+    const payload = await request.validate(LoginWithOtpValidator)
+
+    const userQuery = User.query()
+
+    if (!payload.email && !payload.phone) {
+      return response.api({ message: 'Credential cannot be empty.' }, StatusCodes.BAD_REQUEST)
+    }
+
+    if (payload.email) {
+      userQuery.where('email', payload.email)
+    }
+
+    if (payload.phone) {
+      userQuery.where('phone', payload.phone)
+    }
+
+    const user = await userQuery.first()
+
+    if (!user) {
+      return response.api({ message: 'Invalid credentials.' }, StatusCodes.UNAUTHORIZED)
+    }
+
+    console.log(user.toJSON())
+
+    if (payload.email && !user.emailConfirmedAt) {
+      return response.api({ message: 'Please confirm your email.' }, StatusCodes.FORBIDDEN)
+    }
+
+    if (payload.phone && !user.phoneConfirmedAt) {
+      return response.api({ message: 'Please confirm your phone.' }, StatusCodes.FORBIDDEN)
+    }
+
+    const otpCode = StringTransform.generateOtpNumber()
+    const confirmationToken = this.md5.generate(otpCode)
+
+    user.confirmationToken = confirmationToken
+    user.confirmationSentAt = DateTime.now()
+
+    await user.save()
+
+    if (payload.email) {
+      if (!payload.options?.redirect_uri) {
+        this.mailer.sendOtp(payload.email, otpCode)
+
+        return response.api(
+          { message: `Verification otp code has been sent to ${payload.email}` },
+          StatusCodes.OK
+        )
+      }
+
+      this.mailer.sendMagicLink(payload.email, confirmationToken, payload.options.redirect_uri)
+
+      return response.api(
+        { message: `Verification link has been sent to ${payload.email}` },
+        StatusCodes.OK
+      )
+    }
+
+    if (payload.phone) {
+      if (payload.options?.channel === 'whatsapp') {
+        this.twilio.sendOtpWhatsapp(otpCode, payload.phone)
+
+        return response.api(
+          { message: `OTP Code has been sent to ${payload.phone}` },
+          StatusCodes.OK
+        )
+      }
+
+      this.twilio.sendOtpSms(otpCode, payload.phone)
+      return response.api({ message: `OTP Code has been sent to ${payload.phone}` }, StatusCodes.OK)
     }
   }
 }

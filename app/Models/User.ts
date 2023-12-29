@@ -26,7 +26,7 @@ export default class User extends BaseModel {
   public emailConfirmedAt: DateTime
 
   @column({ serializeAs: null })
-  public confirmationToken: string
+  public confirmationToken: string | null
 
   @column.dateTime()
   public confirmationSentAt: DateTime

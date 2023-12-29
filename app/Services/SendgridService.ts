@@ -7,7 +7,7 @@ export default class SendgridService {
     SgMail.setApiKey(Env.get('SENDGRID_API_KEY')!)
   }
 
-  public async sendEmailVerification(email: string, token: string, redirectUri: string) {
+  public async sendVerification(email: string, token: string, redirectUri: string) {
     try {
       const msgToSend = {
         to: email,
