@@ -17,6 +17,7 @@ import RegisterWithPasswordValidator from 'App/Validators/v1/Auth/RegisterWithPa
 import LoginWithPasswordValidator from 'App/Validators/v1/Auth/LoginWithPasswordValidator'
 import LoginWithOtpValidator from 'App/Validators/v1/Auth/LoginWithOtpValidator'
 import LogoutValidator from 'App/Validators/v1/Auth/LogoutValidator'
+import ResendValidator from 'App/Validators/v1/Auth/ResendValidator'
 
 // Models
 import User from 'App/Models/User'
@@ -42,7 +43,7 @@ export default class AuthsController {
     const payload = await request.validate(RegisterWithPasswordValidator)
 
     if (!payload.email && !payload.phone) {
-      return response.api({ message: 'Credential cannot be empty.' }, StatusCodes.BAD_REQUEST)
+      return response.api({ message: 'Identity cannot be empty.' }, StatusCodes.BAD_REQUEST)
     }
 
     const otpCode = StringTransform.generateOtpNumber()
@@ -96,7 +97,7 @@ export default class AuthsController {
 
     if (result.user && result.identity) {
       if (payload.email) {
-        this.mailer.sendVerification(payload.email, confirmationToken, 'http://localhost:3333')
+        this.mailer.sendVerification(payload.email, confirmationToken, Env.get('APP_URL'))
       } else {
         if (payload.channel === 'whatsapp') {
           this.twilio.sendOtpWhatsapp(otpCode, payload.phone!)
@@ -118,7 +119,93 @@ export default class AuthsController {
         {
           message: 'Failed to create new account.',
         },
-        StatusCodes.BAD_REQUEST
+        StatusCodes.INTERNAL_SERVER_ERROR
+      )
+    }
+  }
+
+  public async resend({ request, response }: HttpContextContract) {
+    const payload = await request.validate(ResendValidator)
+
+    if (!payload.email && !payload.phone) {
+      return response.api({ message: 'Identity cannot be empty.' }, StatusCodes.BAD_REQUEST)
+    }
+
+    const userQuery = User.query()
+
+    if (payload.email) {
+      userQuery.where('email', payload.email)
+    }
+
+    if (payload.phone) {
+      userQuery.where('phone', payload.phone)
+    }
+
+    const user = await userQuery.first()
+
+    if (!user) {
+      return response.api({ message: 'Invalid user account.' }, StatusCodes.UNPROCESSABLE_ENTITY)
+    }
+
+    if (payload.type === 'signup') {
+      if (payload.email && user.emailConfirmedAt) {
+        return response.api(
+          { message: 'Email already confirmed.' },
+          StatusCodes.UNPROCESSABLE_ENTITY
+        )
+      }
+
+      if (payload.phone && user.phoneConfirmedAt) {
+        return response.api(
+          { message: 'Phone already confirmed.' },
+          StatusCodes.UNPROCESSABLE_ENTITY
+        )
+      }
+    }
+
+    if (payload.type === 'signup' && !StringTransform.isResendAvailable(user.confirmationSentAt)) {
+      return response.api(
+        { message: 'You can resend new confirmation after 2 minutes.' },
+        StatusCodes.TOO_MANY_REQUESTS
+      )
+    }
+
+    const otpCode = StringTransform.generateOtpNumber()
+    const confirmationToken = this.md5.generate(otpCode)
+
+    try {
+      user.confirmationToken = confirmationToken
+      await user.save()
+
+      if (payload.email) {
+        this.mailer.sendVerification(
+          payload.email,
+          confirmationToken,
+          payload.options?.redirect_uri ?? Env.get('APP_URL')
+        )
+      } else {
+        if (payload.options?.channel === 'whatsapp') {
+          this.twilio.sendOtpWhatsapp(otpCode, payload.phone!)
+        } else {
+          this.twilio.sendOtpSms(otpCode, payload.phone!)
+        }
+      }
+
+      user.confirmationSentAt = DateTime.now()
+      await user.save()
+
+      return response.api(
+        {
+          message: payload.email
+            ? `We've sent new verification link to ${payload.email}.`
+            : `We've sent new verification code to ${payload.phone}.`,
+        },
+        StatusCodes.OK
+      )
+    } catch (e) {
+      return response.api(
+        { message: 'Failed to resend new confirmation.' },
+        StatusCodes.INTERNAL_SERVER_ERROR
       )
     }
   }
@@ -229,7 +316,7 @@ export default class AuthsController {
     const userQuery = User.query()
 
     if (!payload.email && !payload.phone) {
-      return response.api({ message: 'Credential cannot be empty.' }, StatusCodes.BAD_REQUEST)
+      return response.api({ message: 'Identity cannot be empty.' }, StatusCodes.BAD_REQUEST)
     }
 
     if (payload.email) {

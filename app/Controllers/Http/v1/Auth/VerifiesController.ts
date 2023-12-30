@@ -243,6 +243,7 @@ export default class VerifiesController {
           access_token: userToken.token,
           expires_at: expiresAt,
           refresh_token: newSession.refreshToken.token,
+          type: payload.type,
           status: 'success',
         })
         .toPath(payload.redirect)
