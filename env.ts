@@ -33,6 +33,7 @@ export default Env.rules({
   TWILIO_ACCOUNT_SID: Env.schema.string.optional(),
   TWILIO_AUTH_TOKEN: Env.schema.string.optional(),
   TWILIO_FROM_NUMBER: Env.schema.string.optional(),
+  RESEND_EMAIL_SENDER: Env.schema.string.optional(),
   RESEND_API_KEY: Env.schema.string.optional(),
   VONAGE_API_KEY: Env.schema.string.optional(),
   VONAGE_SECRET_KEY: Env.schema.string.optional(),

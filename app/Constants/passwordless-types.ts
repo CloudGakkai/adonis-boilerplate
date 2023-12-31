@@ -1,1 +1,1 @@
-export const EMAIL_MAGICLINK_TYPES = ['signup', 'magiclink']
+export const EMAIL_MAGICLINK_TYPES = ['signup', 'magiclink', 'recovery']

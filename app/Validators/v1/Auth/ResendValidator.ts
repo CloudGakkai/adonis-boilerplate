@@ -14,5 +14,7 @@ export default class ResendValidator {
     }),
   })
 
-  public messages: CustomMessages = {}
+  public messages: CustomMessages = {
+    email: '{{ field }} should be a valid email.',
+  }
 }

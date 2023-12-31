@@ -155,7 +155,15 @@ export default class VerifiesController {
     const payload = await request.validate(VerifyMagicLinkValidator)
     const headers = request.headers()
 
-    const user = await User.findBy('confirmation_token', payload.token)
+    const userQuery = User.query()
+
+    if (payload.type === 'recovery') {
+      userQuery.where('recovery_token', payload.token)
+    } else {
+      userQuery.where('confirmation_token', payload.token)
+    }
+
+    const user = await userQuery.first()
 
     if (!user) {
       return response
@@ -166,7 +174,11 @@ export default class VerifiesController {
 
     // Check if session is invalid
     // OTP Code should valid for 60 mins
-    if (StringTransform.isOtpExpired(user.confirmationSentAt)) {
+    if (
+      StringTransform.isOtpExpired(
+        payload.type === 'recovery' ? user.recoverySentAt : user.confirmationSentAt
+      )
+    ) {
       return response
         .redirect()
         .withQs({
@@ -182,7 +194,12 @@ export default class VerifiesController {
       const lastSignedAt = DateTime.now()
 
       user.lastSignInAt = lastSignedAt
-      user.confirmationToken = null
+
+      if (payload.type === 'recovery') {
+        user.recoveryToken = null
+      } else {
+        user.confirmationToken = null
+      }
 
       if (payload.type === 'signup') {
         user.emailConfirmedAt = lastSignedAt

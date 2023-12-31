@@ -18,6 +18,7 @@ import LoginWithPasswordValidator from 'App/Validators/v1/Auth/LoginWithPassword
 import LoginWithOtpValidator from 'App/Validators/v1/Auth/LoginWithOtpValidator'
 import LogoutValidator from 'App/Validators/v1/Auth/LogoutValidator'
 import ResendValidator from 'App/Validators/v1/Auth/ResendValidator'
+import ForgotPasswordValidator from 'App/Validators/v1/Auth/ForgotPasswordValidator'
 
 // Models
 import User from 'App/Models/User'
@@ -425,6 +426,56 @@ export default class AuthsController {
       return response.api({ message: '' }, StatusCodes.NO_CONTENT)
     } catch (e) {
       return response.api({ message: `704: ${e}` }, StatusCodes.INTERNAL_SERVER_ERROR)
+    }
+  }
+
+  public async forgotPassword({ request, response }: HttpContextContract) {
+    const payload = await request.validate(ForgotPasswordValidator)
+
+    const user = await User.findBy('email', payload.email)
+
+    if (!user) {
+      return response.api(
+        { message: `We've sent recovery link to ${payload.email}.` },
+        StatusCodes.OK
+      )
+    }
+
+    if (!user.emailConfirmedAt) {
+      return response.api(
+        { message: 'Please confirm your email.' },
+        StatusCodes.UNPROCESSABLE_ENTITY
+      )
+    }
+
+    if (user.recoverySentAt && StringTransform.isResendAvailable(user.recoverySentAt)) {
+      return response.api(
+        { message: 'You can request new recovery link fter 2 minutes.' },
+        StatusCodes.TOO_MANY_REQUESTS
+      )
+    }
+
+    const otpCode = StringTransform.generateOtpNumber()
+    const confirmationToken = this.md5.generate(otpCode)
+
+    try {
+      user.recoveryToken = confirmationToken
+      await user.save()
+
+      this.mailer.sendRecovery(payload.email, confirmationToken, Env.get('APP_URL'))
+
+      user.recoverySentAt = DateTime.now()
+      await user.save()
+
+      return response.api(
+        { message: `We've sent recovery link to ${payload.email}.` },
+        StatusCodes.OK
+      )
+    } catch (e) {
+      return response.api(
+        { message: 'Error when sending recovery link.' },
+        StatusCodes.INTERNAL_SERVER_ERROR
+      )
     }
   }
 }

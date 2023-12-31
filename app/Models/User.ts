@@ -32,7 +32,7 @@ export default class User extends BaseModel {
   public confirmationSentAt: DateTime
 
   @column({ serializeAs: null })
-  public recoveryToken: string
+  public recoveryToken: string | null
 
   @column.dateTime()
   public recoverySentAt: DateTime
