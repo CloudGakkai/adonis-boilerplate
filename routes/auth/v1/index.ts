@@ -6,6 +6,7 @@ Route.group(() => {
   Route.post('/login/otp', 'AuthsController.signInWithOtp')
   Route.post('/resend', 'AuthsController.resend')
   Route.post('/forgot-password', 'AuthsController.forgotPassword')
+  Route.post('/refresh', 'AuthsController.refreshSession').middleware('userSession')
   Route.delete('/logout', 'AuthsController.signOut').middleware('userSession')
   require('./verify')
 })

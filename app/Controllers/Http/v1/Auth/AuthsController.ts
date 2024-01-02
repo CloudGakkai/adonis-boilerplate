@@ -19,6 +19,7 @@ import LoginWithOtpValidator from 'App/Validators/v1/Auth/LoginWithOtpValidator'
 import LogoutValidator from 'App/Validators/v1/Auth/LogoutValidator'
 import ResendValidator from 'App/Validators/v1/Auth/ResendValidator'
 import ForgotPasswordValidator from 'App/Validators/v1/Auth/ForgotPasswordValidator'
+import RefreshSessionValidator from 'App/Validators/v1/Auth/RefreshSessionValidator'
 
 // Models
 import User from 'App/Models/User'
@@ -404,7 +405,10 @@ export default class AuthsController {
 
     try {
       if (!sessions.currentSession) {
-        return response.api({ message: 'Invalid session.' }, StatusCodes.UNAUTHORIZED)
+        return response.api(
+          { message: 'Invalid session, please login again.' },
+          StatusCodes.UNAUTHORIZED
+        )
       }
 
       if (payload.scope === 'global') {
@@ -474,6 +478,77 @@ export default class AuthsController {
     } catch (e) {
       return response.api(
         { message: 'Error when sending recovery link.' },
+        StatusCodes.INTERNAL_SERVER_ERROR
+      )
+    }
+  }
+
+  public async refreshSession({ request, response }: HttpContextContract) {
+    const payload = await request.validate(RefreshSessionValidator)
+    const userId = request.decoded!.user_id
+    const sessionId = request.decoded!.session_id
+    const ip = request.ips()[0]
+
+    const session = await Session.query().where('user_id', userId).andWhere('id', sessionId).first()
+
+    if (!session || session!.ip !== ip) {
+      return response.api(
+        { message: 'Invalid session, please login again.' },
+        StatusCodes.UNAUTHORIZED
+      )
+    }
+
+    const refreshToken = await RefreshToken.query()
+      .where('user_id', userId)
+      .andWhere('session_id', sessionId)
+      .andWhere('token', payload.refresh_token)
+      .first()
+
+    if (!refreshToken || refreshToken?.revoked) {
+      return response.api({ message: 'Invalid refresh token.' }, StatusCodes.FORBIDDEN)
+    }
+
+    const refreshSession = await Database.transaction(async (trx) => {
+      refreshToken.useTransaction(trx)
+
+      refreshToken.revoked = true
+      await refreshToken.save()
+
+      if (session) {
+        session.useTransaction(trx)
+        session.refreshedAt = DateTime.now()
+        await session.save()
+      }
+
+      const newRefreshToken = await RefreshToken.create(
+        {
+          userId: userId,
+          sessionId: sessionId,
+          parent: refreshToken.id,
+          revoked: false,
+          token: cuid(),
+        },
+        { client: trx }
+      )
+
+      return {
+        newRefreshToken,
+      }
+    })
+
+    if (refreshSession.newRefreshToken) {
+      const accessToken = this.jwt.generate({ user_id: userId, session_id: sessionId }).make()
+
+      return response.api(
+        {
+          access_token: accessToken,
+          refreshToken: refreshSession.newRefreshToken.token,
+        },
+        StatusCodes.OK
+      )
+    } else {
+      return response.api(
+        { message: 'Failed to refresh session.' },
         StatusCodes.INTERNAL_SERVER_ERROR
       )
     }
