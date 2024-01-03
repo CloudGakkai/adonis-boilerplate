@@ -1,4 +1,5 @@
 import { markdownToTxt } from 'markdown-to-txt'
+import { DateTime } from 'luxon'
 
 export default class StringTransform {
   public static toSlug(str: string): string {
@@ -27,5 +28,32 @@ export default class StringTransform {
 
   public static toPlainText(str: string): string {
     return markdownToTxt(str)
+  }
+
+  public static generateOtpNumber() {
+    const otp = Math.floor(Math.random() * 900000) + 100000
+    return otp.toString()
+  }
+
+  public static isOtpExpired(confirmationSentAt: DateTime<boolean>) {
+    const sentAt = DateTime.fromISO(confirmationSentAt.toString())
+    const now = DateTime.now()
+
+    // Calculate the difference in minutes
+    const diffInMinutes = now.diff(sentAt, 'minutes').minutes
+
+    // Check if the difference is more than 60 minutes
+    return diffInMinutes > 60
+  }
+
+  public static isResendAvailable(confirmationSentAt: DateTime<boolean>) {
+    const sentAt = DateTime.fromISO(confirmationSentAt.toString())
+    const now = DateTime.now()
+
+    // Calculate the difference in minutes
+    const diffInMinutes = now.diff(sentAt, 'minutes').minutes
+
+    // Check if the difference is more than 2 minutes
+    return diffInMinutes >= 2
   }
 }

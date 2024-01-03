@@ -1,5 +1,6 @@
 interface Token {
-  user_id: number
+  user_id: string
+  session_id: string
 }
 
 declare module '@ioc:Adonis/Core/Request' {

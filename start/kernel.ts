@@ -42,5 +42,5 @@ Server.middleware.register([
 |
 */
 Server.middleware.registerNamed({
-  session: () => import('App/Middleware/SessionMiddleware'),
+  userSession: () => import('App/Middleware/UserSessionMiddleware'),
 })

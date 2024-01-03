@@ -1,6 +1,7 @@
 import Route from '@ioc:Adonis/Core/Route'
 
 Route.group(() => {
-  require('./authRoutes')
-  require('./signedRoutes')
+  Route.get('/', ({ response }) => {
+    return response.api({ message: 'Hello world' }, 200)
+  })
 }).prefix('/v1')
