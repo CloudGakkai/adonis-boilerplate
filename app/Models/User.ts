@@ -20,7 +20,7 @@ export default class User extends BaseModel {
   public email: string | null
 
   @column({ serializeAs: null })
-  public encryptedPassword: string
+  public encryptedPassword: string | null
 
   @column.dateTime()
   public emailConfirmedAt: DateTime
@@ -38,10 +38,10 @@ export default class User extends BaseModel {
   public recoverySentAt: DateTime
 
   @column({ serializeAs: null })
-  public emailChangeTokenNew: string
+  public emailChangeTokenNew: string | null
 
   @column({ serializeAs: null })
-  public emailChange: string
+  public emailChange: string | null
 
   @column.dateTime()
   public emailChangeSentAt: DateTime
@@ -62,10 +62,10 @@ export default class User extends BaseModel {
   public phoneConfirmedAt: DateTime
 
   @column({ serializeAs: null })
-  public phoneChange: string
+  public phoneChange: string | null
 
   @column({ serializeAs: null })
-  public phoneChangeToken: string
+  public phoneChangeToken: string | null
 
   @column.dateTime()
   public phoneChangeSentAt: DateTime
@@ -88,7 +88,7 @@ export default class User extends BaseModel {
   @beforeSave()
   public static async hashPassword(user: User) {
     if (user.$dirty.encryptedPassword) {
-      user.encryptedPassword = await Hash.make(user.encryptedPassword)
+      user.encryptedPassword = await Hash.make(user.encryptedPassword!)
     }
   }
 
