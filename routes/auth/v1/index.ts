@@ -9,6 +9,7 @@ Route.group(() => {
   Route.post('/refresh', 'AuthsController.refreshSession').middleware('userSession')
   Route.delete('/logout', 'AuthsController.signOut').middleware('userSession')
   require('./verify')
+  require('./sso')
 })
   .prefix('/v1')
   .namespace('App/Controllers/Http/v1/Auth')

@@ -236,6 +236,15 @@ export default class AuthsController {
       return response.api({ message: 'Invalid credentials.' }, StatusCodes.UNAUTHORIZED)
     }
 
+    if (!user.encryptedPassword) {
+      return response.api(
+        {
+          message:
+            'Please log in using the same single sign-on method you originally used, as no password is associated with your account.',
+        },
+        StatusCodes.UNAUTHORIZED
+      )
+    }
     const isPasswordValid = await Hash.verify(user.encryptedPassword, payload.password)
 
     if (!isPasswordValid) {

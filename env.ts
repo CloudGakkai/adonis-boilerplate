@@ -37,4 +37,7 @@ export default Env.rules({
   RESEND_API_KEY: Env.schema.string.optional(),
   VONAGE_API_KEY: Env.schema.string.optional(),
   VONAGE_SECRET_KEY: Env.schema.string.optional(),
+  GOOGLE_CLIENT_ID: Env.schema.string(),
+  GOOGLE_CLIENT_SECRET: Env.schema.string(),
+  SSO_REDIRECT_URI: Env.schema.string.optional(),
 })
